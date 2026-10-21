@@ -5,6 +5,7 @@ import { Seo } from "@/components/seo";
 import { Link } from "wouter";
 import { TowerField } from "@/components/tower-field";
 import { WaterTrail } from "@/components/water-trail";
+import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { useState, useEffect, useRef } from "react";
 
 const SCORE_URL = "/score";
@@ -104,8 +105,11 @@ export default function AiOps() {
   const heroCopyRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  useScrollReveal(pageRef);
   return (
     <SiteShell>
+      <div ref={pageRef}>
       <Seo
         title="NOUA — AI Operations Consulting"
         description="We find costly problems in complex, project-based businesses — slow quotes, dropped handoffs, manual work — and fix them with AI."
@@ -141,7 +145,7 @@ export default function AiOps() {
       </section>
 
       <div className="mx-auto max-w-6xl px-6 pt-12">
-        <div className="grid gap-3 rounded-3xl border border-border/80 bg-card/40 p-6 md:grid-cols-2 lg:grid-cols-4" data-testid="row-hero-gains">
+        <div className="grid gap-3 rounded-3xl border border-border/80 bg-card/40 p-6 md:grid-cols-2 lg:grid-cols-4" data-testid="row-hero-gains" data-reveal>
           {heroGains.map((g) => (
             <div key={g} className="flex items-start gap-3" data-testid={`row-hero-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
               <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground shrink-0" strokeWidth={2.2} />
@@ -166,7 +170,7 @@ export default function AiOps() {
             </div>
           </div>
 
-          <div className="flex md:grid overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0 gap-6 md:grid-cols-3 relative z-10 hide-scrollbar">
+          <div className="flex md:grid overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0 gap-6 md:grid-cols-3 relative z-10 hide-scrollbar" data-reveal-stagger>
             {/* Step 01 */}
             <div className="group relative overflow-hidden rounded-2xl border-[0.5px] border-white/10 bg-[rgba(255,255,255,0.03)] p-8 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-[rgba(255,255,255,0.05)] flex flex-col h-full min-w-[300px] md:min-w-0 snap-center">
               <div className="absolute left-0 top-0 h-[2px] w-full bg-white/30 transition-colors group-hover:bg-white/60" />
@@ -228,7 +232,7 @@ export default function AiOps() {
             </div>
           </div>
           
-          <div className="mt-10 text-center">
+          <div className="mt-10 text-center" data-reveal>
             <p className="text-sm text-muted-foreground">
               Engagements run 6–12 weeks. <span className="text-white">Operational clarity delivered in the first 10 days.</span>
             </p>
@@ -244,7 +248,7 @@ export default function AiOps() {
         description="Teams who want AI to create measurable gains without adding complexity."
         testId="section-clients"
       >
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2" data-reveal-stagger>
           {clients.map((c) => (
             <div key={c.title} className="rounded-3xl border border-border/80 bg-card/40 p-8" data-testid={`card-client-${c.title.replaceAll(" ", "-").toLowerCase()}`}>
               <h3 className="text-lg font-semibold tracking-tight" data-testid={`text-client-title-${c.title.replaceAll(" ", "-").toLowerCase()}`}>
@@ -271,7 +275,7 @@ export default function AiOps() {
         description="Your business becomes easier to run. You stop being the bottleneck. Your team operates independently. AI amplifies what’s already working."
         testId="section-gains"
       >
-        <div className="grid gap-6 md:grid-cols-12">
+        <div className="grid gap-6 md:grid-cols-12" data-reveal-stagger>
           <div className="md:col-span-7">
             <div className="rounded-3xl border border-border/80 bg-card/40 p-8 h-full">
               <p className="text-base leading-relaxed text-muted-foreground" data-testid="text-gains-body">
@@ -310,6 +314,7 @@ export default function AiOps() {
           </div>
         </div>
       </Section>
+      </div>
     </SiteShell>
   );
 }

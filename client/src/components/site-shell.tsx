@@ -201,11 +201,11 @@ export function Section({
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex items-end justify-between gap-10">
           <div className="max-w-3xl">
-            <TitleTag className="mt-4 text-2xl font-semibold tracking-tight md:text-4xl" data-testid="text-section-title">
+            <TitleTag className="mt-4 text-2xl font-semibold tracking-tight md:text-4xl" data-testid="text-section-title" data-reveal>
               {title}
             </TitleTag>
             {description ? (
-              <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg" data-testid="text-section-description">
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg" data-testid="text-section-description" data-reveal>
                 {description}
               </p>
             ) : null}
