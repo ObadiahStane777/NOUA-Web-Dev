@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "rewrites": [
+    { "source": "/how-we-work", "destination": "/how-we-work.html" },
+    { "source": "/who-its-for", "destination": "/who-its-for.html" },
+    { "source": "/audit", "destination": "/audit.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/booking", "destination": "/booking.html" },
+    { "source": "/score", "destination": "/score.html" },
+    { "source": "/calculator", "destination": "/calculator.html" },
+    { "source": "/blog", "destination": "/blog.html" },
+    { "source": "/blog/:slug", "destination": "/blog/:slug.html" }
+  ]
+}

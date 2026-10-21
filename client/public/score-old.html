@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Automation Readiness Score</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+      
+      @font-face {
+        font-family: 'Geist';
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-400-normal.woff2') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+      }
+      
+      @font-face {
+        font-family: 'Geist';
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-500-normal.woff2') format('woff2');
+        font-weight: 500;
+        font-style: normal;
+      }
+      
+      @font-face {
+        font-family: 'Geist';
+        src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.woff2') format('woff2');
+        font-weight: 600;
+        font-style: normal;
+      }
+
+      :root {
+        --background: #000000;
+        --foreground: #ffffff;
+        --card: rgba(5, 5, 5, 0.4);
+        --card-border: rgba(36, 36, 36, 0.8);
+        --muted: #1a1a1a;
+        --muted-foreground: #b8b8b8;
+        --accent: #ffffff;
+        --font-sans: 'Geist', 'IBM Plex Sans', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--background);
+        color: var(--foreground);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-w-4xl: 896px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 4rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        font-size: 2.25rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+        line-height: 1.1;
+      }
+
+      @media (min-width: 768px) {
+        h1 {
+          font-size: 3rem;
+        }
+      }
+
+      .subtitle {
+        font-size: 1.125rem;
+        color: var(--muted-foreground);
+        max-width: 42rem;
+      }
+
+      .layout {
+        display: grid;
+        gap: 2rem;
+      }
+
+      @media (min-width: 768px) {
+        .layout {
+          grid-template-columns: 1fr 300px;
+        }
+      }
+
+      .questions {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+      }
+
+      @media (min-width: 768px) {
+        .card {
+          padding: 2rem;
+        }
+      }
+
+      .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
+      }
+
+      .card-desc {
+        color: var(--muted-foreground);
+        margin-bottom: 1.5rem;
+      }
+
+      input[type=range] {
+        -webkit-appearance: none;
+        width: 100%;
+        background: transparent;
+        margin-bottom: 1rem;
+      }
+
+      input[type=range]:focus {
+        outline: none;
+      }
+
+      input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 8px;
+        cursor: pointer;
+        background: var(--muted);
+        border-radius: 4px;
+      }
+
+      input[type=range]::-webkit-slider-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: var(--foreground);
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -6px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      }
+
+      .slider-track {
+        position: relative;
+        height: 8px;
+        background: var(--muted);
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+
+      .slider-fill {
+        position: absolute;
+        height: 100%;
+        background: var(--foreground);
+        border-radius: 4px;
+        pointer-events: none;
+      }
+
+      .marks {
+        display: flex;
+        justify-content: space-between;
+        color: rgba(255,255,255,0.5);
+        font-size: 0.75rem;
+        padding: 0 0.25rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .feedback {
+        min-height: 40px;
+        padding: 1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: rgba(255,255,255,0.9);
+      }
+
+      .score-panel {
+        position: sticky;
+        top: 3rem;
+        background: rgba(10, 10, 10, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--card-border);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      }
+
+      .score-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--muted-foreground);
+        margin-bottom: 1.5rem;
+      }
+
+      .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .score-value {
+        font-size: 3.75rem;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        line-height: 1;
+      }
+
+      .score-max {
+        font-size: 1.25rem;
+        color: var(--muted-foreground);
+      }
+
+      .btn {
+        width: 100%;
+        padding: 1rem 2rem;
+        border-radius: 9999px;
+        font-family: inherit;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: var(--foreground);
+        color: var(--background);
+      }
+
+      .btn-primary:hover {
+        background: rgba(255,255,255,0.9);
+      }
+
+      .btn-outline {
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--card-border);
+      }
+
+      .btn-outline:hover {
+        background: rgba(255,255,255,0.05);
+      }
+
+      /* Results View */
+      .results-view {
+        display: none;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+      }
+
+      .results-card {
+        width: 100%;
+        max-width: 48rem;
+        background: rgba(5,5,5,0.4);
+        border: 1px solid var(--card-border);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        backdrop-filter: blur(8px);
+      }
+
+      @media (min-width: 768px) {
+        .results-card {
+          padding: 3rem;
+        }
+      }
+
+      .tier-title {
+        font-size: 2.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+      }
+
+      .tier-message {
+        font-size: 1.125rem;
+        color: var(--muted-foreground);
+        max-width: 42rem;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+      }
+
+      .breakdown {
+        margin-bottom: 2.5rem;
+      }
+
+      .breakdown-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+
+      .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+      }
+
+      .breakdown-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .breakdown-bar {
+        width: 6rem;
+        height: 0.5rem;
+        background: var(--muted);
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+
+      .breakdown-fill {
+        height: 100%;
+        background: rgba(255,255,255,0.7);
+        border-radius: 9999px;
+      }
+
+      .breakdown-score {
+        font-size: 0.875rem;
+        font-weight: 500;
+        width: 1rem;
+        text-align: right;
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+      }
+
+      @media (min-width: 640px) {
+        .actions {
+          flex-direction: row;
+        }
+        .actions .btn {
+          width: auto;
+        }
+      }
+
+      /* Tiers */
+      .tier-red { color: #f87171; }
+      .tier-yellow { color: #facc15; }
+      .tier-blue { color: #60a5fa; }
+      .tier-green { color: #4ade80; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+      const CATEGORIES = [
+        {
+          id: 'bottleneck',
+          title: 'Bottleneck Identification',
+          question: 'Do you know where work slows down?',
+          descriptions: {
+            1: "We have no visibility into where or why work gets stuck.",
+            2: "We occasionally notice slowdowns but can't pinpoint the root cause.",
+            3: "We have a general idea of our bottlenecks but no formal tracking.",
+            4: "We actively track bottlenecks and have plans to address them.",
+            5: "We have real-time visibility and proactively manage potential bottlenecks."
+          }
+        },
+        {
+          id: 'roleClarity',
+          title: 'Role Clarity',
+          question: 'Can every workflow stage be traced to a single owner?',
+          descriptions: {
+            1: "Everyone does everything. No clear ownership.",
+            2: "Roles exist on paper but blur in practice.",
+            3: "Most people know their primary responsibilities.",
+            4: "Clear accountability with few overlaps.",
+            5: "Every process step has a single, unambiguous owner."
+          }
+        },
+        {
+          id: 'processClarity',
+          title: 'Process Clarity',
+          question: 'Are core workflows documented and repeatable?',
+          descriptions: {
+            1: "Everything is in people's heads. Processes change daily.",
+            2: "Basic documentation exists but is rarely followed.",
+            3: "Some core processes are documented and somewhat repeatable.",
+            4: "Most workflows are documented and consistently followed.",
+            5: "All core workflows are meticulously documented, optimized, and repeatable."
+          }
+        },
+        {
+          id: 'dataVisibility',
+          title: 'Data Visibility',
+          question: 'Is there a single source of truth all data can pass through?',
+          descriptions: {
+            1: "Data lives in multiple places and no one is sure which version is correct.",
+            2: "There is one main system, but teams regularly work from exports, spreadsheets, or their own copies.",
+            3: "Most data flows through one place, but exceptions and workarounds are common.",
+            4: "A central source exists and is mostly trusted, with minor gaps or inconsistencies.",
+            5: "All data passes through a single, reliable source that the whole business operates from."
+          }
+        },
+        {
+          id: 'decisionConsistency',
+          title: 'Decision Consistency',
+          question: 'Are decisions rule-based or reactive?',
+          descriptions: {
+            1: "Every situation requires a unique, reactive decision.",
+            2: "We have some rules, but exceptions are the norm.",
+            3: "Routine decisions follow rules; complex ones are reactive.",
+            4: "Most decisions are rule-based and predictable.",
+            5: "Decisions are highly consistent, governed by clear, established rules."
+          }
+        }
+      ];
+
+      function getResultTier(score) {
+        if (score >= 23) {
+          return {
+            title: "Force Multiplier",
+            message: "You are in the acceleration phase. Your operations are solid, and automation will act as a true force multiplier for your growth.",
+            colorClass: "tier-green"
+          };
+        }
+        if (score >= 18) {
+          return {
+            title: "Ready to Scale",
+            message: "Your foundation is strong. Implementing automation now will compound your gains and drive significant efficiency.",
+            colorClass: "tier-blue"
+          };
+        }
+        if (score >= 11) {
+          return {
+            title: "Partial Readiness",
+            message: "You have a mix of strengths and weaknesses. Focus on fixing the weaker operational areas before heavily investing in automation.",
+            colorClass: "tier-yellow"
+          };
+        }
+        return {
+          title: "Automation Will Backfire",
+          message: "Your current operations need stabilization. Applying automation to broken processes will only scale chaos. Focus on fundamentals first.",
+          colorClass: "tier-red"
+        };
+      }
+
+      function App() {
+        const [scores, setScores] = React.useState({
+          bottleneck: 3,
+          roleClarity: 3,
+          processClarity: 3,
+          dataVisibility: 3,
+          decisionConsistency: 3
+        });
+        const [showResults, setShowResults] = React.useState(false);
+
+        const handleScoreChange = (id, value) => {
+          setScores(prev => ({ ...prev, [id]: parseInt(value) }));
+        };
+
+        const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const tier = getResultTier(totalScore);
+
+        if (showResults) {
+          return (
+            <div className="results-view" style={{ display: 'flex' }}>
+              <div className="results-card">
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                  <h2 className="score-label" style={{ marginBottom: '1rem' }}>Your Result</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <span style={{ fontSize: '3.75rem', fontWeight: 'bold' }}>{totalScore}</span>
+                    <span style={{ fontSize: '1.5rem', color: 'var(--muted-foreground)' }}>/ 25</span>
+                  </div>
+                  <h1 className={`tier-title ${tier.colorClass}`}>{tier.title}</h1>
+                  <p className="tier-message">{tier.message}</p>
+                </div>
+
+                <div className="breakdown">
+                  <h3 className="breakdown-title" style={{ borderBottom: 'none', paddingBottom: '0', textAlign: 'center' }}>Your score shows exactly where to focus. Let's turn that into a clear action plan.</h3>
+                </div>
+
+                <div className="actions">
+                  <button 
+                    className="btn btn-outline"
+                    onClick={() => setShowResults(false)}
+                  >
+                    Retake Assessment
+                  </button>
+                  <a 
+                    href="https://www.noua.uk/booking" 
+                    className="btn btn-primary"
+                  >
+                    Book a Strategy Call
+                  </a>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="container" style={{ maxWidth: '896px' }}>
+            <div className="header">
+              <h1>Automation Readiness Score (ARS™)</h1>
+              <p className="subtitle">
+                Evaluate your operational foundation before investing in AI or automation.
+              </p>
+            </div>
+
+            <div className="layout" style={{ display: 'flex', flexDirection: 'column', maxWidth: '600px', margin: '0 auto' }}>
+              <div className="questions">
+                {CATEGORIES.map((category) => (
+                  <div key={category.id} className="card">
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <h3 className="card-title">{category.title}</h3>
+                      <p className="card-desc">{category.question}</p>
+                    </div>
+                    
+                    <div>
+                      <div style={{ position: 'relative' }}>
+                        <div 
+                          className="slider-fill" 
+                          style={{ 
+                            width: `${(scores[category.id] - 1) * 25}%`,
+                            top: '8px',
+                            height: '8px',
+                            zIndex: 0
+                          }}
+                        />
+                        <input 
+                          type="range" 
+                          min="1" 
+                          max="5" 
+                          step="1"
+                          value={scores[category.id]}
+                          onChange={(e) => handleScoreChange(category.id, e.target.value)}
+                          style={{ position: 'relative', zIndex: 1 }}
+                        />
+                      </div>
+                      
+                      <div className="marks">
+                        <span>1</span>
+                        <span>2</span>
+                        <span>3</span>
+                        <span>4</span>
+                        <span>5</span>
+                      </div>
+
+                      <div className="feedback">
+                        {category.descriptions[scores[category.id]]}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setShowResults(true)}
+                  style={{ width: '100%', maxWidth: '300px' }}
+                >
+                  Calculate My Score
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('app'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>

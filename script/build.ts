@@ -1,0 +1,87 @@
+import { build as esbuild } from "esbuild";
+import { build as viteBuild } from "vite";
+import { rm, readFile } from "fs/promises";
+import path from "path";
+import { prerender } from "./prerender";
+
+const rootDir = path.resolve(import.meta.dirname, "..");
+
+// server deps to bundle to reduce openat(2) syscalls
+// which helps cold start times
+const allowlist = [
+  "@google/generative-ai",
+  "axios",
+  "connect-pg-simple",
+  "cors",
+  "date-fns",
+  "drizzle-orm",
+  "drizzle-zod",
+  "express",
+  "express-rate-limit",
+  "express-session",
+  "jsonwebtoken",
+  "memorystore",
+  "multer",
+  "nanoid",
+  "nodemailer",
+  "openai",
+  "passport",
+  "passport-local",
+  "pg",
+  "stripe",
+  "uuid",
+  "ws",
+  "xlsx",
+  "zod",
+  "zod-validation-error",
+];
+
+async function buildAll() {
+  await rm("dist", { recursive: true, force: true });
+
+  console.log("building client...");
+  await viteBuild();
+
+  console.log("building ssr entry (for prerendering only, not shipped)...");
+  await viteBuild({
+    configFile: path.resolve(rootDir, "vite.config.ts"),
+    build: {
+      ssr: "src/entry-server.tsx",
+      outDir: path.resolve(rootDir, "dist/ssr"),
+      emptyOutDir: true,
+      rollupOptions: {
+        output: { format: "es", entryFileNames: "entry-server.js" },
+      },
+    },
+  });
+
+  console.log("prerendering static pages...");
+  await prerender(rootDir);
+
+  console.log("building server...");
+  const pkg = JSON.parse(await readFile("package.json", "utf-8"));
+  const allDeps = [
+    ...Object.keys(pkg.dependencies || {}),
+    ...Object.keys(pkg.devDependencies || {}),
+  ];
+  const externals = allDeps.filter((dep) => !allowlist.includes(dep));
+
+  await esbuild({
+    entryPoints: ["server/index.ts"],
+    platform: "node",
+    bundle: true,
+    format: "cjs",
+    outfile: "dist/index.cjs",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
+    minify: true,
+    external: externals,
+    logLevel: "info",
+  });
+}
+
+buildAll().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

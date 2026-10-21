@@ -1,0 +1,61 @@
+name: GSC weekly snapshot
+
+# Pulls Search Console performance data via the API (script/gsc-fetch.ts)
+# and commits it as a new dated snapshot in analytics/gsc/. Runs weekly so
+# the impressions/clicks history in that folder builds up on its own —
+# see script/gsc-diff.ts for comparing any two snapshots, and
+# analytics/ai-citations/ for the (manual, no API exists) citation-check
+# side of outcome tracking.
+#
+# Auth: GSC_ADC_JSON is the contents of a Google Application Default
+# Credentials file (an OAuth refresh token for a real Google account with
+# Search Console access to noua.uk — NOT a service account key; org policy
+# iam.disableServiceAccountKeyCreation blocks those). See script/gsc-fetch.ts's
+# header comment for how that credential was generated.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # every Monday, 09:00 UTC
+  workflow_dispatch: {} # manual "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Write GSC credential
+        run: |
+          mkdir -p "$RUNNER_TEMP/gcloud"
+          printf '%s' "$GSC_ADC_JSON" > "$RUNNER_TEMP/gcloud/adc.json"
+        env:
+          GSC_ADC_JSON: ${{ secrets.GSC_ADC_JSON }}
+
+      - name: Fetch GSC snapshot
+        run: npm run gsc:fetch
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcloud/adc.json
+
+      - name: Show diff vs. previous snapshot
+        run: npm run gsc:diff
+
+      - name: Commit snapshot if changed
+        run: |
+          git config user.name "gsc-snapshot-bot"
+          git config user.email "actions@github.com"
+          git add analytics/gsc/
+          if git diff --cached --quiet; then
+            echo "No new snapshot data — nothing to commit."
+          else
+            git commit -m "chore: weekly GSC snapshot $(date -u +%Y-%m-%d)"
+            git push
+          fi
