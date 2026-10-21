@@ -7,6 +7,8 @@ import { blogPosts } from "../client/src/generated/blog-content";
 // hand-listed here, since that list grows every time a post is added.
 const ROUTES: { path: string; file: string }[] = [
   { path: "/", file: "index.html" },
+  { path: "/ai-ops", file: "ai-ops.html" },
+  { path: "/gtm", file: "gtm.html" },
   { path: "/how-we-work", file: "how-we-work.html" },
   { path: "/who-its-for", file: "who-its-for.html" },
   { path: "/audit", file: "audit.html" },

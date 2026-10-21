@@ -14,12 +14,19 @@ import {
 const CALENDLY_URL = "/booking";
 
 const nav = [
+  { label: "AI Operations", href: "/ai-ops" },
+  { label: "GTM & Growth", href: "/gtm" },
+  { label: "Blog", href: "/blog" },
+  { label: "Contact", href: "/contact" },
+] as const;
+
+// The footer keeps links to every page, including AI Ops pages not yet in the main nav.
+const footerNav = [
   { label: "Home", href: "/" },
+  ...nav,
   { label: "How We Work", href: "/how-we-work" },
   { label: "Who It's For", href: "/who-its-for" },
   { label: "Audit", href: "/audit" },
-  { label: "Blog", href: "/blog" },
-  { label: "Contact", href: "/contact" },
 ] as const;
 
 function NavLink({ href, children, testId }: { href: string; children: React.ReactNode; testId: string }) {
@@ -78,7 +85,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 className="hidden rounded-full px-5 md:flex"
                 data-testid="button-nav-audit"
               >
-                <Link href={CALENDLY_URL}>Book Free Audit</Link>
+                <Link href={CALENDLY_URL}>Book a call</Link>
               </Button>
 
               <Sheet>
@@ -107,7 +114,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                       className="text-lg font-medium transition-colors hover:text-primary"
                       data-testid="link-mobile-nav-audit"
                     >
-                      Book Free Audit
+                      Book a call
                     </Link>
                   </div>
                 </SheetContent>
@@ -138,7 +145,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex flex-wrap items-center gap-x-2 gap-y-2" data-testid="footer-links">
-              {nav.map((n) => (
+              {footerNav.map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}
@@ -154,7 +161,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 className="rounded-full px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 data-testid="link-footer-calendly"
               >
-                Book Audit
+                Book a call
               </Link>
             </div>
           </div>

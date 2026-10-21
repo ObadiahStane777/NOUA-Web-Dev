@@ -5,6 +5,8 @@ import path from "path";
 // Keep in sync with the <Route> paths registered in client/src/App.tsx.
 const KNOWN_ROUTES = new Set([
   "/",
+  "/ai-ops",
+  "/gtm",
   "/how-we-work",
   "/who-its-for",
   "/audit",

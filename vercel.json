@@ -2,6 +2,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "rewrites": [
+    { "source": "/ai-ops", "destination": "/ai-ops.html" },
+    { "source": "/gtm", "destination": "/gtm.html" },
     { "source": "/how-we-work", "destination": "/how-we-work.html" },
     { "source": "/who-its-for", "destination": "/who-its-for.html" },
     { "source": "/audit", "destination": "/audit.html" },
