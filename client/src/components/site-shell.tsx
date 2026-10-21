@@ -138,7 +138,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                 <div>
                   <p className="text-sm font-semibold" data-testid="text-footer-name">NOUA</p>
                   <p className="text-xs text-muted-foreground" data-testid="text-footer-tagline">
-                    Operational intelligence systems.
+                    AI operations and go-to-market systems.
                   </p>
                 </div>
               </div>
