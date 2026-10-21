@@ -7,6 +7,7 @@ import { TowerField } from "@/components/tower-field";
 import { WaterTrail } from "@/components/water-trail";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { OpsSystemDiagram } from "@/components/ops-system-diagram";
+import { ServicesSelector } from "@/components/services-selector";
 import { EngagementTimeline } from "@/components/engagement-timeline";
 import { useState, useEffect, useRef } from "react";
 
@@ -69,72 +70,6 @@ const services = [
   },
 ] as const;
 
-function ServicesSelector() {
-  const [active, setActive] = useState(0);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const onKey = (e: React.KeyboardEvent, i: number) => {
-    const next = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
-    if (!next) return;
-    e.preventDefault();
-    const n = (i + next + services.length) % services.length;
-    setActive(n);
-    tabRefs.current[n]?.focus();
-  };
-  const s = services[active];
-  return (
-    <div className="grid gap-6 md:grid-cols-12" data-reveal-stagger>
-      <div className="flex flex-col gap-3 md:col-span-5" role="tablist" aria-label="Services" aria-orientation="vertical">
-        {services.map((svc, i) => (
-          <button
-            key={svc.name}
-            ref={(el) => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`service-tab-${i}`}
-            aria-selected={i === active}
-            aria-controls="service-panel"
-            tabIndex={i === active ? 0 : -1}
-            onClick={() => setActive(i)}
-            onKeyDown={(e) => onKey(e, i)}
-            className={
-              "group rounded-2xl border p-6 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
-              (i === active ? "border-white/40 bg-white/[0.06]" : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]")
-            }
-            data-testid={`tab-service-${i}`}
-          >
-            <span className="flex items-center justify-between gap-4">
-              <span className="text-lg font-semibold text-white">{svc.name}</span>
-              <ArrowRight className={"h-4 w-4 transition-all " + (i === active ? "translate-x-0 text-white opacity-100" : "-translate-x-1 text-white/40 opacity-0 group-hover:opacity-100")} />
-            </span>
-            <span className="mt-1 block text-sm text-muted-foreground">{svc.line}</span>
-          </button>
-        ))}
-      </div>
-
-      <div
-        className="overflow-hidden rounded-3xl border border-border/80 bg-card/40 md:col-span-7"
-        role="tabpanel"
-        id="service-panel"
-        aria-labelledby={`service-tab-${active}`}
-      >
-        <OpsSystemDiagram mode={active} className="block h-[440px] w-full sm:h-[300px] md:h-[340px]" />
-        <div className="border-t border-border/80 p-6 md:p-8">
-          <h3 className="text-xl font-semibold tracking-tight text-white">{s.line}</h3>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {s.tags.map((t) => (
-              <span key={t} className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const RotatingSubheading = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -271,7 +206,11 @@ export default function AiOps() {
         description="Consulting to find what's slowing you down, AI implementation to fix it, and team enablement so your people keep the gains."
         testId="section-services"
       >
-        <ServicesSelector />
+        <ServicesSelector
+          services={services}
+          idPrefix="service"
+          diagram={(active) => <OpsSystemDiagram mode={active} className="block h-[440px] w-full sm:h-[300px] md:h-[340px]" />}
+        />
       </Section>
 
       <div className="mx-auto max-w-6xl px-6" aria-hidden>

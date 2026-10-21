@@ -1,11 +1,13 @@
 import { useRef } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Radar, ScanSearch, Send } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteShell, Section } from "@/components/site-shell";
 import { Seo } from "@/components/seo";
 import { GtmSearchlight } from "@/components/gtm-searchlight";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import { ServicesSelector } from "@/components/services-selector";
+import { GtmSystemDiagram } from "@/components/gtm-system-diagram";
 
 // DRAFT COPY: written from the brief (market intelligence, account research, targeted outbound;
 // "find better commercial opportunities", not marketing). No stats, clients or results are claimed.
@@ -27,24 +29,21 @@ const problems = [
 
 const services = [
   {
-    n: "01",
-    icon: Radar,
     name: "Market intelligence",
-    body: "Where should you be selling? We map your market: the segments, competitors and buying signals that show where demand is and where you're missing out.",
+    line: "Where should you be selling?",
+    body: "We map your market: the segments, competitors and buying signals that show where demand is and where you're missing out.",
     tags: ["Market mapping", "Competitor landscape", "Buying signals"],
   },
   {
-    n: "02",
-    icon: ScanSearch,
     name: "Account research",
-    body: "Who exactly should you approach? A researched shortlist of target accounts and the people inside them, with the context to open a relevant conversation.",
+    line: "Who exactly should you approach?",
+    body: "A researched shortlist of target accounts and the people inside them, with the context to open a relevant conversation.",
     tags: ["Ideal customer profile", "Target account lists", "Decision-makers"],
   },
   {
-    n: "03",
-    icon: Send,
     name: "Targeted outbound",
-    body: "How do you reach them? Personal outreach to a short list, not mass email. Messaging and follow-up built around each account.",
+    line: "How do you reach them?",
+    body: "Personal outreach to a short list, not mass email. Messaging and follow-up built around each account.",
     tags: ["Messaging", "Outreach sequences", "Follow-up"],
   },
 ] as const;
@@ -113,34 +112,11 @@ export default function Gtm() {
           description="Three services that work on their own or in sequence: find where to sell, who to approach, and how to reach them."
           testId="section-gtm-services"
         >
-          <div
-            className="hide-scrollbar -mx-6 flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 pb-6 md:mx-0 md:grid md:grid-cols-3 md:px-0 md:pb-0"
-            data-reveal-stagger
-          >
-            {services.map((s) => (
-              <div
-                key={s.name}
-                className="group relative flex h-full min-w-[300px] snap-center flex-col overflow-hidden rounded-2xl border-[0.5px] border-white/10 bg-[rgba(255,255,255,0.03)] p-8 transition-colors hover:border-white/20 hover:bg-[rgba(255,255,255,0.05)] md:min-w-0"
-              >
-                <div className="absolute left-0 top-0 h-[2px] w-full bg-white/30 transition-colors group-hover:bg-white/60" />
-                <div className="mb-8 flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.n}</span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-[0.5px] border-white/10 bg-white/5">
-                    <s.icon className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-                <h3 className="mb-4 text-xl font-semibold text-white">{s.name}</h3>
-                <p className="mb-10 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-                <div className="mt-auto flex flex-wrap gap-2">
-                  {s.tags.map((t) => (
-                    <span key={t} className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ServicesSelector
+            services={services}
+            idPrefix="gtm-service"
+            diagram={(active) => <GtmSystemDiagram mode={active} className="block h-[440px] w-full sm:h-[300px] md:h-[340px]" />}
+          />
         </Section>
 
         <div className="mx-auto max-w-6xl px-6" aria-hidden>
