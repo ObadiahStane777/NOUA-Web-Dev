@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { SiteShell, Section } from "@/components/site-shell";
 import { Seo } from "@/components/seo";
 import { Link } from "wouter";
-import heroBackground from "@/assets/videos/hero-background.mp4";
-import { useState, useEffect } from "react";
+import { TowerField } from "@/components/tower-field";
+import { useState, useEffect, useRef } from "react";
 
 const SCORE_URL = "/score";
 
@@ -100,63 +100,54 @@ const RotatingSubheading = () => {
 };
 
 export default function AiOps() {
+  const heroCopyRef = useRef<HTMLDivElement>(null);
   return (
     <SiteShell>
       <Seo
         title="NOUA — AI Operations Consulting"
         description="We find costly problems in complex, project-based businesses — slow quotes, dropped handoffs, manual work — and fix them with AI."
       />
-      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover opacity-80 grayscale"
-        >
-          <source src={heroBackground} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-background/20 backdrop-blur-[1px]" />
-        <div className="relative z-10 mx-auto max-w-6xl px-6 pt-14 md:pt-20">
-          <div className="grid items-end gap-10 md:grid-cols-12">
-            <div className="md:col-span-12">
-             
+      <section className="relative flex min-h-[90vh] touch-pan-y items-end overflow-hidden md:items-center" data-testid="section-hero">
+        <TowerField avoidRef={heroCopyRef} />
+        {/* Phones: fade the tower behind the text */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background from-20% via-background/70 via-40% to-transparent to-65% md:hidden" />
+        <div className="pointer-events-none relative z-10 mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+          <div ref={heroCopyRef} className="max-w-xl">
+            <h1
+              className="text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl"
+              data-testid="text-hero-title"
+            >More volume. Same team.</h1>
 
-              <h1
-                className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl"
-                data-testid="text-hero-title"
-              >More volume. Same team.</h1>
+            <div className="mt-6">
+              <RotatingSubheading />
+            </div>
 
-              <div className="mt-6">
-                <RotatingSubheading />
-              </div>
-
-              <div className="mt-10 flex flex-wrap items-center gap-3">
-                <Button asChild variant="outline" className="rounded-full px-6" data-testid="button-hero-qualify">
-                  <Link href={SCORE_URL}>
-                    See if you qualify
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="mt-12 grid gap-3 rounded-3xl border border-border/80 bg-card/40 p-6 md:grid-cols-2 lg:grid-cols-4">
-                {heroGains.map((g) => (
-                  <div key={g} className="flex items-start gap-3" data-testid={`row-hero-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground shrink-0" strokeWidth={2.2} />
-                    <p className="text-sm text-[#ffffff]" data-testid={`text-hero-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
-                      {g}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            <div className="pointer-events-auto mt-10 flex flex-wrap items-center gap-3">
+              <Button asChild variant="outline" className="rounded-full bg-background/40 px-6" data-testid="button-hero-qualify">
+                <Link href={SCORE_URL}>
+                  See if you qualify
+                </Link>
+              </Button>
             </div>
           </div>
-
-          <div className="mt-16">
-            <div className="hairline h-px w-full" />
-          </div>
         </div>
+        <p className="pointer-events-none absolute bottom-6 right-6 z-10 hidden font-mono text-[11px] uppercase tracking-[0.08em] text-white/45 md:block" aria-hidden="true">
+          Move across the tower · click to send a shockwave
+        </p>
       </section>
+
+      <div className="mx-auto max-w-6xl px-6 pt-12">
+        <div className="grid gap-3 rounded-3xl border border-border/80 bg-card/40 p-6 md:grid-cols-2 lg:grid-cols-4" data-testid="row-hero-gains">
+          {heroGains.map((g) => (
+            <div key={g} className="flex items-start gap-3" data-testid={`row-hero-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
+              <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground shrink-0" strokeWidth={2.2} />
+              <p className="text-sm text-[#ffffff]" data-testid={`text-hero-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
+                {g}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
       <Section
         eyebrow="HOW IT WORKS"
         title="Rebuild the foundation."
