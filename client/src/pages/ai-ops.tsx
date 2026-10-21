@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Scan, Wrench, Cpu } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteShell, Section } from "@/components/site-shell";
 import { Seo } from "@/components/seo";
@@ -6,6 +6,8 @@ import { Link } from "wouter";
 import { TowerField } from "@/components/tower-field";
 import { WaterTrail } from "@/components/water-trail";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
+import { OpsSystemDiagram } from "@/components/ops-system-diagram";
+import { EngagementTimeline } from "@/components/engagement-timeline";
 import { useState, useEffect, useRef } from "react";
 
 const SCORE_URL = "/score";
@@ -40,17 +42,99 @@ const heroGains = [
 
 const outcomeGains = [
   "Your team operates independently",
-  "Projects move forward seemlessly",
+  "Projects move forward seamlessly",
   "Revenue grows faster than headcount",
   "Issues caught and resolved before they become fires",
 ] as const;
 
-const foundationPoints = [
-  "Stabilize workflows and handoffs",
-  "Design operational systems and structure",
-  "Implement AI automation with governance",
-  "Measure impact on time, cost, and capacity",
+// DRAFT COPY for the three services: built from the existing page and the brief.
+const services = [
+  {
+    name: "Consulting",
+    line: "Find what's slowing you down.",
+    body: "We map every workflow, handoff and decision point, show you where time and money leak, and fix the process before anything gets automated.",
+    tags: ["Workflow audit", "Bottleneck identification", "Process design"],
+  },
+  {
+    name: "AI implementation",
+    line: "Build systems that do the work.",
+    body: "AI team members and automations layered on a controlled foundation, so quotes, specs and follow-ups move without someone chasing them. ROI tracked from the start.",
+    tags: ["AI team members", "Automations", "ROI tracking"],
+  },
+  {
+    name: "Team enablement",
+    line: "Make sure your team uses it.",
+    body: "We train your team on AI and on the systems we've built, so they can run them, improve them and keep the gains after we hand over.",
+    tags: ["Team training", "AI skills", "Handover"],
+  },
 ] as const;
+
+function ServicesSelector() {
+  const [active, setActive] = useState(0);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKey = (e: React.KeyboardEvent, i: number) => {
+    const next = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+    if (!next) return;
+    e.preventDefault();
+    const n = (i + next + services.length) % services.length;
+    setActive(n);
+    tabRefs.current[n]?.focus();
+  };
+  const s = services[active];
+  return (
+    <div className="grid gap-6 md:grid-cols-12" data-reveal-stagger>
+      <div className="flex flex-col gap-3 md:col-span-5" role="tablist" aria-label="Services" aria-orientation="vertical">
+        {services.map((svc, i) => (
+          <button
+            key={svc.name}
+            ref={(el) => {
+              tabRefs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`service-tab-${i}`}
+            aria-selected={i === active}
+            aria-controls="service-panel"
+            tabIndex={i === active ? 0 : -1}
+            onClick={() => setActive(i)}
+            onKeyDown={(e) => onKey(e, i)}
+            className={
+              "group rounded-2xl border p-6 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
+              (i === active ? "border-white/40 bg-white/[0.06]" : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]")
+            }
+            data-testid={`tab-service-${i}`}
+          >
+            <span className="flex items-center justify-between gap-4">
+              <span className="text-lg font-semibold text-white">{svc.name}</span>
+              <ArrowRight className={"h-4 w-4 transition-all " + (i === active ? "translate-x-0 text-white opacity-100" : "-translate-x-1 text-white/40 opacity-0 group-hover:opacity-100")} />
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">{svc.line}</span>
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="overflow-hidden rounded-3xl border border-border/80 bg-card/40 md:col-span-7"
+        role="tabpanel"
+        id="service-panel"
+        aria-labelledby={`service-tab-${active}`}
+      >
+        <OpsSystemDiagram mode={active} className="block h-[440px] w-full sm:h-[300px] md:h-[340px]" />
+        <div className="border-t border-border/80 p-6 md:p-8">
+          <h3 className="text-xl font-semibold tracking-tight text-white">{s.line}</h3>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {s.tags.map((t) => (
+              <span key={t} className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const RotatingSubheading = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -157,108 +241,19 @@ export default function AiOps() {
         </div>
       </div>
       <Section
-        eyebrow="HOW IT WORKS"
-        title="Rebuild the foundation."
-        description="Most AI implementations fail because the operations underneath are broken. We fix the foundation before we build anything."
-        testId="section-how-it-works"
-      >
-        <div className="relative">
-          {/* Connector line for desktop */}
-          <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[1px] bg-white/10 z-0">
-            <div className="absolute -right-1 top-1/2 -translate-y-1/2">
-              <ArrowRight className="h-3 w-3 text-white/40" />
-            </div>
-          </div>
-
-          <div className="flex md:grid overflow-x-auto snap-x snap-mandatory pb-6 -mx-6 px-6 md:mx-0 md:px-0 md:pb-0 gap-6 md:grid-cols-3 relative z-10 hide-scrollbar" data-reveal-stagger>
-            {/* Step 01 */}
-            <div className="group relative overflow-hidden rounded-2xl border-[0.5px] border-white/10 bg-[rgba(255,255,255,0.03)] p-8 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-[rgba(255,255,255,0.05)] flex flex-col h-full min-w-[300px] md:min-w-0 snap-center">
-              <div className="absolute left-0 top-0 h-[2px] w-full bg-white/30 transition-colors group-hover:bg-white/60" />
-              <div className="mb-8 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">01</span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-[0.5px] border-white/10 bg-white/5">
-                  <Scan className="h-4 w-4 text-white" />
-                </div>
-              </div>
-              <h3 className="mb-4 text-xl font-semibold text-white">Map</h3>
-              <p className="mb-10 text-sm leading-relaxed text-muted-foreground">
-                We walk every workflow, handoff, and decision point. No assumptions. Every bottleneck documented.
-              </p>
-              <div className="mt-auto flex flex-wrap gap-2">
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Workflow audit</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Bottleneck Identification</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Cost of chaos</span>
-              </div>
-            </div>
-
-            {/* Step 02 */}
-            <div className="group relative overflow-hidden rounded-2xl border-[0.5px] border-white/10 bg-[rgba(255,255,255,0.03)] p-8 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-[rgba(255,255,255,0.05)] flex flex-col h-full min-w-[300px] md:min-w-0 snap-center">
-              <div className="absolute left-0 top-0 h-[2px] w-full bg-white/30 transition-colors group-hover:bg-white/60" />
-              <div className="mb-8 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">02</span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-[0.5px] border-white/10 bg-white/5">
-                  <Wrench className="h-4 w-4 text-white" />
-                </div>
-              </div>
-              <h3 className="mb-4 text-xl font-semibold text-white">Fix</h3>
-              <p className="mb-10 text-sm leading-relaxed text-muted-foreground">
-                We remove the places where staff make it up as they go. Processes documented, decisions standardised.
-              </p>
-              <div className="mt-auto flex flex-wrap gap-2">
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">SOPs</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Decision logic</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Role clarity</span>
-              </div>
-            </div>
-
-            {/* Step 03 */}
-            <div className="group relative overflow-hidden rounded-2xl border-[0.5px] border-white/10 bg-[rgba(255,255,255,0.03)] p-8 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-[rgba(255,255,255,0.05)] flex flex-col h-full min-w-[300px] md:min-w-0 snap-center">
-              <div className="absolute left-0 top-0 h-[2px] w-full bg-white/30 transition-colors group-hover:bg-white/60" />
-              <div className="mb-8 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">03</span>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-[0.5px] border-white/10 bg-white/5">
-                  <Cpu className="h-4 w-4 text-white" />
-                </div>
-              </div>
-              <h3 className="mb-4 text-xl font-semibold text-white">Build</h3>
-              <p className="mb-10 text-sm leading-relaxed text-muted-foreground">
-                AI team members and automations layered on a controlled foundation. Systems that scale without adding headcount.
-              </p>
-              <div className="mt-auto flex flex-wrap gap-2">
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">AI Team Members</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">Automations</span>
-                <span className="rounded-full border-[0.5px] border-white/20 px-3 py-1.5 text-xs text-muted-foreground">ROI tracking</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-10 text-center" data-reveal>
-            <p className="text-sm text-muted-foreground">
-              Engagements run 6–12 weeks. <span className="text-white">Operational clarity delivered in the first 10 days.</span>
-            </p>
-          </div>
-        </div>
-      </Section>
-      <div className="mx-auto max-w-6xl px-6" aria-hidden>
-        <div className="hairline h-px w-full" />
-      </div>
-      <Section
-        eyebrow="Clients"
-        title="Clients we serve"
+        title="Sound familiar?"
         description="Teams who want AI to create measurable gains without adding complexity."
         testId="section-clients"
       >
         <div className="grid gap-6 md:grid-cols-2" data-reveal-stagger>
           {clients.map((c) => (
             <div key={c.title} className="rounded-3xl border border-border/80 bg-card/40 p-8" data-testid={`card-client-${c.title.replaceAll(" ", "-").toLowerCase()}`}>
-              <h3 className="text-lg font-semibold tracking-tight" data-testid={`text-client-title-${c.title.replaceAll(" ", "-").toLowerCase()}`}>
-                {c.title}
-              </h3>
-              <ul className="mt-6 space-y-3 text-sm text-muted-foreground" data-testid={`list-client-${c.title.replaceAll(" ", "-").toLowerCase()}`}>
+              <h3 className="text-lg font-semibold tracking-tight">{c.title}</h3>
+              <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                 {c.items.map((i) => (
-                  <li key={i} className="flex items-start gap-3" data-testid={`row-client-${i.replaceAll(" ", "-").toLowerCase()}`}>
+                  <li key={i} className="flex items-start gap-3">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/70" />
-                    <span data-testid={`text-client-item-${i.replaceAll(" ", "-").toLowerCase()}`}>{i}</span>
+                    <span>{i}</span>
                   </li>
                 ))}
               </ul>
@@ -266,41 +261,64 @@ export default function AiOps() {
           ))}
         </div>
       </Section>
+
       <div className="mx-auto max-w-6xl px-6" aria-hidden>
         <div className="hairline h-px w-full" />
       </div>
+
       <Section
-        eyebrow="Outcomes"
+        title="Three ways we work."
+        description="Consulting to find what's slowing you down, AI implementation to fix it, and team enablement so your people keep the gains."
+        testId="section-services"
+      >
+        <ServicesSelector />
+      </Section>
+
+      <div className="mx-auto max-w-6xl px-6" aria-hidden>
+        <div className="hairline h-px w-full" />
+      </div>
+
+      <Section
+        title="How an engagement runs."
+        description="Most AI implementations fail because the operations underneath are broken. We fix the foundation first, then build, then make sure your team can run it."
+        testId="section-how-it-works"
+      >
+        <EngagementTimeline />
+        <p className="mt-12 text-center text-sm text-muted-foreground" data-reveal>
+          Engagements run 6–12 weeks. <span className="text-white">Operational clarity delivered in the first 10 days.</span>
+        </p>
+      </Section>
+
+      <div className="mx-auto max-w-6xl px-6" aria-hidden>
+        <div className="hairline h-px w-full" />
+      </div>
+
+      <Section
         title="What you gain"
-        description="Your business becomes easier to run. You stop being the bottleneck. Your team operates independently. AI amplifies what’s already working."
+        description="Your business becomes easier to run. You stop being the bottleneck. Your team operates independently. AI amplifies what's already working."
         testId="section-gains"
       >
         <div className="grid gap-6 md:grid-cols-12" data-reveal-stagger>
           <div className="md:col-span-7">
-            <div className="rounded-3xl border border-border/80 bg-card/40 p-8 h-full">
-              <p className="text-base leading-relaxed text-muted-foreground" data-testid="text-gains-body">
-               
-              </p>
-              <div className="mt-8 grid gap-3 md:grid-cols-2">
-                {outcomeGains.map((g) => (
-                  <div key={g} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/20 p-4" data-testid={`card-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-foreground" strokeWidth={2.2} />
-                    <p className="text-sm text-[#ffffff]" data-testid={`text-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
-                      {g}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            <div className="grid h-full gap-3 rounded-3xl border border-border/80 bg-card/40 p-8 sm:grid-cols-2">
+              {outcomeGains.map((g) => (
+                <div key={g} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/20 p-4" data-testid={`card-gain-${g.replaceAll(" ", "-").toLowerCase()}`}>
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" strokeWidth={2.2} />
+                  <p className="text-sm text-white">{g}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="md:col-span-5 flex flex-col">
-            <div ref={ctaRef} className="rounded-3xl border border-border/80 bg-card/40 p-6 h-full flex flex-col justify-between">
+          <div className="flex flex-col md:col-span-5">
+            <div ref={ctaRef} className="flex h-full flex-col justify-between rounded-3xl border border-border/80 bg-card/40 p-6">
               <div>
                 <h3 className="mt-2 text-xl font-semibold tracking-tight" data-testid="text-gains-cta-title">
                   Start with a Free Operations & AI Readiness Audit
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground" data-testid="text-gains-cta-body">You receive an overview of your operational flow, identified bottlenecks and recommended AI opportunities with measurable ROI.</p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground" data-testid="text-gains-cta-body">
+                  You receive an overview of your operational flow, identified bottlenecks and recommended AI opportunities with measurable ROI.
+                </p>
               </div>
               <div className="mt-6 space-y-3">
                 <Button asChild className="w-full rounded-full" data-testid="button-gains-audit">
@@ -313,6 +331,23 @@ export default function AiOps() {
             </div>
           </div>
         </div>
+
+        <Link
+          href="/gtm"
+          className="group mt-6 flex flex-col gap-2 rounded-3xl border border-border/80 bg-card/40 p-6 transition-colors hover:border-white/25 md:flex-row md:items-center md:justify-between md:p-8"
+          data-reveal
+          data-testid="link-ai-ops-gtm"
+        >
+          <span>
+            <span className="block text-lg font-semibold tracking-tight text-white">Need more of the right work?</span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              GTM &amp; Growth finds better commercial opportunities: market intelligence, account research and targeted outbound.
+            </span>
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-white">
+            Explore GTM &amp; Growth <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
       </Section>
       </div>
     </SiteShell>
