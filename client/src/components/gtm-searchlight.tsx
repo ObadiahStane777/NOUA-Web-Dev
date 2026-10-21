@@ -8,10 +8,10 @@ import standSrc from "@/assets/images/gtm-figure-stand.png";
  * the cursor (and wanders on its own when nobody is pointing). Hidden figures rise out of the dust
  * where the light falls. Reaching figures send a faint thread of dots to the main figure's hand.
  *
- * Figure images are white silhouettes on black. Every figure is turned to face the main figure,
- * mirroring the image where needed. To swap in new figures: replace gtm-figure-reach.png /
- * gtm-figure-stand.png, set MASK_FACING to the way the new images face, and adjust FOOT_U /
- * HAND_V if the new pose's feet or hand sit elsewhere.
+ * Figure images are greyscale maps on black (brighter = more dots), cut from the generated
+ * figures. Every figure is turned to face the main figure, mirroring the image where needed.
+ * To swap in new figures: replace gtm-figure-reach.png / gtm-figure-stand.png, set MASK_FACING
+ * to the way the new images face, and update ANCHORS if the feet or hand sit elsewhere.
  *
  * Speed safeguards: the still landscape is drawn once and reused; each frame only redraws the
  * searchlight area, a few twinkling dots and the figures. Stops off screen or in a hidden tab.
@@ -23,13 +23,15 @@ const SW = 1200;
 const SH = 670;
 const MAIN_HAND: [number, number] = [568, 258];
 const MAIN_H = 233; // main figure height in scene px
-// Which way the figure images face. The placeholder (cut from the scene's main figure) faces left.
-const MASK_FACING: "left" | "right" = "left";
-// Silhouette anchors, as fractions of the mask image: where the feet are (x) and the hand is (y)
-const FOOT_U = 0.72;
-const HAND_V = 0.2;
+// Which way the figure images face
+const MASK_FACING: "left" | "right" = "right";
 
 type Kind = "reach" | "stand";
+// Anchors as fractions of each figure image: centre of the feet (x) and height of the hand (y)
+const ANCHORS: Record<Kind, { footU: number; handV: number }> = {
+  reach: { footU: 0.35, handV: 0.3 },
+  stand: { footU: 0.55, handV: 0.5 },
+};
 // Feet position in scene coords and scale relative to the main figure. Figures left of the main
 // figure face right (towards it); figures to its right face left.
 const FIGS: { x: number; y: number; s: number; face: "left" | "right"; kind: Kind }[] = [
@@ -165,7 +167,8 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         const footX = ox + f.x * sc;
         const footY = oy + f.y * sc;
         const flip = f.face !== MASK_FACING;
-        const left = footX - (flip ? 1 - FOOT_U : FOOT_U) * wid;
+        const { footU, handV } = ANCHORS[f.kind];
+        const left = footX - (flip ? 1 - footU : footU) * wid;
         const top = footY - hgt;
         const count = Math.round(2600 * f.s * f.s * Math.min(1.3, sc) + 300);
         const pts: FigPoint[] = [];
@@ -174,17 +177,18 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
           t++;
           const u = Math.random();
           const v = Math.random();
-          if (lum(mask, flip ? 1 - u : u, v) < 0.5) continue;
+          const L = lum(mask, flip ? 1 - u : u, v);
+          if (L < 0.15 || Math.random() > L * 1.4) continue;
           pts.push({
             tx: left + u * wid,
             ty: top + v * hgt,
             sx: footX + gauss() * wid * 0.9,
-            sy: footY + Math.random() * hgt * 0.08,
+            sy: footY - Math.random() * hgt * 0.12 + gauss() * hgt * 0.05,
             delay: (1 - v) * 0.45,
-            b: 0.7 + Math.random() * 0.3,
+            b: Math.min(1, 0.45 + L * 0.7),
           });
         }
-        const hand: [number, number] = [f.face === "right" ? left + wid : left, top + HAND_V * hgt];
+        const hand: [number, number] = [f.face === "right" ? left + wid : left, top + handV * hgt];
         return { cx: left + wid / 2, cy: top + hgt / 2, hand, pts, r: 0, d: dim(left + wid / 2, top + hgt / 2), kind: f.kind };
       });
       mainHand = [ox + MAIN_HAND[0] * sc, oy + MAIN_HAND[1] * sc];
