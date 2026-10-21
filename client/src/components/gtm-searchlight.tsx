@@ -21,8 +21,10 @@ import standSrc from "@/assets/images/gtm-figure-stand.png";
 // Source scene coordinates (the original image was 1200×670)
 const SW = 1200;
 const SH = 670;
-const MAIN_HAND: [number, number] = [568, 258];
-const MAIN_H = 233; // main figure height in scene px
+// The centre pair (always visible), drawn from the reaching figure: the main figure stands at
+// MAIN_FEET facing left; its partner faces right and is placed so their hands meet.
+const MAIN_FEET: [number, number] = [695, 442];
+const MAIN_H = 233; // main figure height in scene px; hidden figures are scaled relative to it
 // Which way the figure images face
 const MASK_FACING: "left" | "right" = "right";
 
@@ -37,7 +39,7 @@ const ANCHORS: Record<Kind, { footU: number; handV: number }> = {
 const FIGS: { x: number; y: number; s: number; face: "left" | "right"; kind: Kind }[] = [
   { x: 175, y: 470, s: 0.6, face: "right", kind: "stand" },
   { x: 340, y: 590, s: 1.0, face: "right", kind: "reach" },
-  { x: 520, y: 372, s: 0.42, face: "right", kind: "reach" },
+  { x: 452, y: 332, s: 0.36, face: "right", kind: "reach" },
   { x: 870, y: 470, s: 0.7, face: "left", kind: "reach" },
   { x: 1135, y: 385, s: 0.45, face: "left", kind: "stand" },
   { x: 1040, y: 632, s: 1.0, face: "left", kind: "reach" },
@@ -106,8 +108,10 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
       const sc = Math.max(W / SW, H / SH);
       const focusX = W < 700 ? 0.55 : 0.5;
       const ox = Math.min(0, Math.max(W - SW * sc, W / 2 - SW * focusX * sc));
-      const oy = H - SH * sc;
       const tb = avoidBox();
+      let oy = H - SH * sc;
+      // Phones: lower the landscape so the centre pair stands below the text, not behind it
+      if (W < 768 && tb) oy = Math.max(oy, tb.b + 16 - (MAIN_FEET[1] - MAIN_H) * sc);
       const dim = (x: number, y: number) => {
         if (!tb) return 1;
         const dx = Math.max(tb.l - x, 0, x - tb.r);
@@ -136,9 +140,59 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         ph[n] = Math.random() * 6.28;
         n++;
       }
-      const x = bx.subarray(0, n);
-      const y = by.subarray(0, n);
-      const b = bb.subarray(0, n);
+      // The centre pair: two reaching figures whose hands meet, drawn as part of the landscape
+      const pairX: number[] = [];
+      const pairY: number[] = [];
+      const pairB: number[] = [];
+      {
+        const mask = masks.reach;
+        const { footU, handV } = ANCHORS.reach;
+        const hgt = MAIN_H * sc;
+        const wid = hgt * (mask.w / mask.h);
+        const top = oy + MAIN_FEET[1] * sc - hgt;
+        // main figure faces left
+        const mainFlip = MASK_FACING !== "left";
+        const mainLeft = ox + MAIN_FEET[0] * sc - (mainFlip ? 1 - footU : footU) * wid;
+        mainHand = [mainLeft, top + handV * hgt];
+        // partner faces right, hand just touching the main figure's hand
+        const partFlip = MASK_FACING !== "right";
+        const partLeft = mainLeft - wid + 3 * sc;
+        const count = Math.round(5200 * Math.min(1.4, sc));
+        for (const [left, flip] of [
+          [mainLeft, mainFlip],
+          [partLeft, partFlip],
+        ] as const) {
+          let k = 0;
+          let tries = 0;
+          while (k < count && tries < count * 40) {
+            tries++;
+            const u = Math.random();
+            const v = Math.random();
+            const L = lum(mask, flip ? 1 - u : u, v);
+            if (L < 0.15 || Math.random() > L * 1.4) continue;
+            const px = left + u * wid;
+            const py = top + v * hgt;
+            pairX.push(px);
+            pairY.push(py);
+            pairB.push(Math.min(1, 0.5 + L * 0.8));
+            k++;
+          }
+        }
+      }
+      const total = n + pairX.length;
+      const x = new Float32Array(total);
+      const y = new Float32Array(total);
+      const b = new Float32Array(total);
+      const phAll = new Float32Array(total);
+      x.set(bx.subarray(0, n));
+      y.set(by.subarray(0, n));
+      b.set(bb.subarray(0, n));
+      phAll.set(ph.subarray(0, n));
+      x.set(pairX, n);
+      y.set(pairY, n);
+      b.set(pairB, n);
+      for (let i = n; i < total; i++) phAll[i] = Math.random() * 6.28;
+      n = total;
 
       // Draw the still landscape once
       const img = document.createElement("canvas");
@@ -157,7 +211,7 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
       const bins: number[][] = Array.from({ length: cols * rows }, () => []);
       for (let i = 0; i < n; i++) bins[Math.min(rows - 1, (y[i] / CELL) | 0) * cols + Math.min(cols - 1, (x[i] / CELL) | 0)].push(i);
       const tw = Array.from({ length: Math.min(1800, n) }, () => (Math.random() * n) | 0);
-      base = { x, y, b, ph: ph.subarray(0, n), img, bins, cols, rows, tw };
+      base = { x, y, b, ph: phAll, img, bins, cols, rows, tw };
 
       // Hidden figures: each dot rises from the dust at the figure's feet
       figs = FIGS.map((f) => {
@@ -191,7 +245,6 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         const hand: [number, number] = [f.face === "right" ? left + wid : left, top + handV * hgt];
         return { cx: left + wid / 2, cy: top + hgt / 2, hand, pts, r: 0, d: dim(left + wid / 2, top + hgt / 2), kind: f.kind };
       });
-      mainHand = [ox + MAIN_HAND[0] * sc, oy + MAIN_HAND[1] * sc];
       light.R = Math.max(120, Math.min(200, W * 0.12));
       if (!light.user) {
         light.x = light.tx = W * 0.62;
@@ -248,7 +301,7 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         for (const p of f.pts) {
           const q = ease(Math.max(0, Math.min(1, (f.r - p.delay) / 0.55)));
           const jx = Math.sin(t * 0.002 + p.tx) * (1 - q) * 3;
-          const a = (0.06 + 0.72 * q) * p.b * Math.max(0.35, f.d);
+          const a = (0.06 + 0.72 * q) * p.b * Math.max(0.35, f.d) * Math.min(1, f.r * 5);
           ctx!.fillStyle = STYLES[Math.min(15, (a * 16) | 0)];
           ctx!.fillRect(p.sx + (p.tx - p.sx) * q + jx, p.sy + (p.ty - p.sy) * q, 1.5, 1.5);
         }
