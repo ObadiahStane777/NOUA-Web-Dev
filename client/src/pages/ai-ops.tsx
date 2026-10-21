@@ -4,6 +4,7 @@ import { SiteShell, Section } from "@/components/site-shell";
 import { Seo } from "@/components/seo";
 import { Link } from "wouter";
 import { TowerField } from "@/components/tower-field";
+import { WaterTrail } from "@/components/water-trail";
 import { useState, useEffect, useRef } from "react";
 
 const SCORE_URL = "/score";
@@ -101,13 +102,16 @@ const RotatingSubheading = () => {
 
 export default function AiOps() {
   const heroCopyRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
   return (
     <SiteShell>
       <Seo
         title="NOUA — AI Operations Consulting"
         description="We find costly problems in complex, project-based businesses — slow quotes, dropped handoffs, manual work — and fix them with AI."
       />
-      <section className="relative flex min-h-[90vh] touch-pan-y items-end overflow-hidden md:items-center" data-testid="section-hero">
+      <WaterTrail startRef={heroRef} endRef={ctaRef} />
+      <section ref={heroRef} className="relative flex min-h-[90vh] touch-pan-y items-end overflow-hidden md:items-center" data-testid="section-hero">
         <TowerField avoidRef={heroCopyRef} />
         {/* Phones: fade the tower behind the text */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background from-20% via-background/70 via-40% to-transparent to-65% md:hidden" />
@@ -287,7 +291,7 @@ export default function AiOps() {
           </div>
 
           <div className="md:col-span-5 flex flex-col">
-            <div className="rounded-3xl border border-border/80 bg-card/40 p-6 h-full flex flex-col justify-between">
+            <div ref={ctaRef} className="rounded-3xl border border-border/80 bg-card/40 p-6 h-full flex flex-col justify-between">
               <div>
                 <h3 className="mt-2 text-xl font-semibold tracking-tight" data-testid="text-gains-cta-title">
                   Start with a Free Operations & AI Readiness Audit
