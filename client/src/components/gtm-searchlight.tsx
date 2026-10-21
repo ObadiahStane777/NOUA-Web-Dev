@@ -6,7 +6,8 @@ import standSrc from "@/assets/images/gtm-figure-stand.png";
 /**
  * Interactive hero background for /gtm: a stippled night landscape with a searchlight that follows
  * the cursor (and wanders on its own when nobody is pointing). Hidden figures rise out of the dust
- * where the light falls. Reaching figures send a faint thread of dots to the main figure's hand.
+ * where the light falls, including the main figure's handshake partner. Reaching figures send a
+ * faint thread of dots to the handshake.
  *
  * Figure images are greyscale maps on black (brighter = more dots), cut from the generated
  * figures. Every figure is turned to face the main figure, mirroring the image where needed.
@@ -21,8 +22,8 @@ import standSrc from "@/assets/images/gtm-figure-stand.png";
 // Source scene coordinates (the original image was 1200×670)
 const SW = 1200;
 const SH = 670;
-// The centre pair (always visible), drawn from the reaching figure: the main figure stands at
-// MAIN_FEET facing left; its partner faces right and is placed so their hands meet.
+// The centre pair, drawn from the reaching figure: the main figure stands at MAIN_FEET facing left
+// and is always visible; its partner faces right with hands meeting, and only appears when found.
 const MAIN_FEET: [number, number] = [695, 442];
 const MAIN_H = 233; // main figure height in scene px; hidden figures are scaled relative to it
 // Which way the figure images face
@@ -36,7 +37,13 @@ const ANCHORS: Record<Kind, { footU: number; handV: number }> = {
 };
 // Feet position in scene coords and scale relative to the main figure. Figures left of the main
 // figure face right (towards it); figures to its right face left.
-const FIGS: { x: number; y: number; s: number; face: "left" | "right"; kind: Kind }[] = [
+const FIGS: {
+  x: number;
+  y: number;
+  s: number;
+  face: "left" | "right";
+  kind: Kind;
+}[] = [
   { x: 175, y: 470, s: 0.6, face: "right", kind: "stand" },
   { x: 340, y: 590, s: 1.0, face: "right", kind: "reach" },
   { x: 452, y: 332, s: 0.36, face: "right", kind: "reach" },
@@ -45,11 +52,30 @@ const FIGS: { x: number; y: number; s: number; face: "left" | "right"; kind: Kin
   { x: 1040, y: 632, s: 1.0, face: "left", kind: "reach" },
 ];
 
-const STYLES = Array.from({ length: 16 }, (_, k) => `rgba(255,255,255,${((k + 1) / 16).toFixed(3)})`);
+const STYLES = Array.from(
+  { length: 16 },
+  (_, k) => `rgba(255,255,255,${((k + 1) / 16).toFixed(3)})`,
+);
 
 type Px = { data: Uint8ClampedArray; w: number; h: number };
-type FigPoint = { tx: number; ty: number; sx: number; sy: number; delay: number; b: number };
-type Fig = { cx: number; cy: number; hand: [number, number]; pts: FigPoint[]; r: number; d: number; kind: Kind };
+type FigPoint = {
+  tx: number;
+  ty: number;
+  sx: number;
+  sy: number;
+  delay: number;
+  b: number;
+};
+type Fig = {
+  cx: number;
+  cy: number;
+  hand: [number, number];
+  pts: FigPoint[];
+  r: number;
+  d: number;
+  thread: boolean; // sends a thread to the handshake when found
+  peak: number; // brightness when fully formed
+};
 
 function lum(p: Px, u: number, v: number) {
   if (u < 0 || v < 0 || u >= 1 || v >= 1) return 0;
@@ -58,7 +84,11 @@ function lum(p: Px, u: number, v: number) {
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
 const ease = (p: number) => p * p * (3 - 2 * p);
 
-export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement | null> }) {
+export function GtmSearchlight({
+  avoidRef,
+}: {
+  avoidRef?: RefObject<HTMLElement | null>;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -67,7 +97,9 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
     const ctx = canvas?.getContext("2d");
     if (!canvas || !host || !ctx) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     let scene: Px | null = null;
     let masks: Record<Kind, Px> | null = null;
     let W = 0;
@@ -91,7 +123,15 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
     } | null = null;
     let figs: Fig[] = [];
     const CELL = 48;
-    const light = { x: 0, y: 0, tx: 0, ty: 0, user: false, lastUser: -1e9, R: 170 };
+    const light = {
+      x: 0,
+      y: 0,
+      tx: 0,
+      ty: 0,
+      user: false,
+      lastUser: -1e9,
+      R: 170,
+    };
     let samples: number[] = [];
     let measureFrom = 0;
 
@@ -100,7 +140,12 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
       if (!el) return null;
       const h = host.getBoundingClientRect();
       const r = el.getBoundingClientRect();
-      return { l: r.left - h.left - 30, t: r.top - h.top - 30, r: r.right - h.left + 40, b: r.bottom - h.top + 30 };
+      return {
+        l: r.left - h.left - 30,
+        t: r.top - h.top - 30,
+        r: r.right - h.left + 40,
+        b: r.bottom - h.top + 30,
+      };
     };
 
     function build() {
@@ -111,7 +156,8 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
       const tb = avoidBox();
       let oy = H - SH * sc;
       // Phones: lower the landscape so the centre pair stands below the text, not behind it
-      if (W < 768 && tb) oy = Math.max(oy, tb.b + 16 - (MAIN_FEET[1] - MAIN_H) * sc);
+      if (W < 768 && tb)
+        oy = Math.max(oy, tb.b + 16 - (MAIN_FEET[1] - MAIN_H) * sc);
       const dim = (x: number, y: number) => {
         if (!tb) return 1;
         const dx = Math.max(tb.l - x, 0, x - tb.r);
@@ -140,10 +186,19 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         ph[n] = Math.random() * 6.28;
         n++;
       }
-      // The centre pair: two reaching figures whose hands meet, drawn as part of the landscape
+      // The main figure, always visible, drawn as part of the landscape. Its partner is a hidden figure.
       const pairX: number[] = [];
       const pairY: number[] = [];
       const pairB: number[] = [];
+      let partner = {
+        left: 0,
+        top: 0,
+        wid: 0,
+        hgt: 0,
+        flip: false,
+        footX: 0,
+        footY: 0,
+      };
       {
         const mask = masks.reach;
         const { footU, handV } = ANCHORS.reach;
@@ -152,16 +207,23 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         const top = oy + MAIN_FEET[1] * sc - hgt;
         // main figure faces left
         const mainFlip = MASK_FACING !== "left";
-        const mainLeft = ox + MAIN_FEET[0] * sc - (mainFlip ? 1 - footU : footU) * wid;
+        const mainLeft =
+          ox + MAIN_FEET[0] * sc - (mainFlip ? 1 - footU : footU) * wid;
         mainHand = [mainLeft, top + handV * hgt];
         // partner faces right, hand just touching the main figure's hand
         const partFlip = MASK_FACING !== "right";
         const partLeft = mainLeft - wid + 3 * sc;
+        partner = {
+          left: partLeft,
+          top,
+          wid,
+          hgt,
+          flip: partFlip,
+          footX: partLeft + (partFlip ? 1 - footU : footU) * wid,
+          footY: top + hgt,
+        };
         const count = Math.round(5200 * Math.min(1.4, sc));
-        for (const [left, flip] of [
-          [mainLeft, mainFlip],
-          [partLeft, partFlip],
-        ] as const) {
+        for (const [left, flip] of [[mainLeft, mainFlip]] as const) {
           let k = 0;
           let tries = 0;
           while (k < count && tries < count * 40) {
@@ -209,22 +271,29 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
       const cols = Math.ceil(W / CELL);
       const rows = Math.ceil(H / CELL);
       const bins: number[][] = Array.from({ length: cols * rows }, () => []);
-      for (let i = 0; i < n; i++) bins[Math.min(rows - 1, (y[i] / CELL) | 0) * cols + Math.min(cols - 1, (x[i] / CELL) | 0)].push(i);
-      const tw = Array.from({ length: Math.min(1800, n) }, () => (Math.random() * n) | 0);
+      for (let i = 0; i < n; i++)
+        bins[
+          Math.min(rows - 1, (y[i] / CELL) | 0) * cols +
+            Math.min(cols - 1, (x[i] / CELL) | 0)
+        ].push(i);
+      const tw = Array.from(
+        { length: Math.min(1800, n) },
+        () => (Math.random() * n) | 0,
+      );
       base = { x, y, b, ph: phAll, img, bins, cols, rows, tw };
 
       // Hidden figures: each dot rises from the dust at the figure's feet
-      figs = FIGS.map((f) => {
-        const mask = masks![f.kind];
-        const hgt = MAIN_H * f.s * sc;
-        const wid = hgt * (mask.w / mask.h);
-        const footX = ox + f.x * sc;
-        const footY = oy + f.y * sc;
-        const flip = f.face !== MASK_FACING;
-        const { footU, handV } = ANCHORS[f.kind];
-        const left = footX - (flip ? 1 - footU : footU) * wid;
-        const top = footY - hgt;
-        const count = Math.round(2600 * f.s * f.s * Math.min(1.3, sc) + 300);
+      const makePoints = (
+        mask: Px,
+        left: number,
+        top: number,
+        wid: number,
+        hgt: number,
+        flip: boolean,
+        footX: number,
+        footY: number,
+        count: number,
+      ) => {
         const pts: FigPoint[] = [];
         let t = 0;
         while (pts.length < count && t < count * 40) {
@@ -242,9 +311,71 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
             b: Math.min(1, 0.45 + L * 0.7),
           });
         }
-        const hand: [number, number] = [f.face === "right" ? left + wid : left, top + handV * hgt];
-        return { cx: left + wid / 2, cy: top + hgt / 2, hand, pts, r: 0, d: dim(left + wid / 2, top + hgt / 2), kind: f.kind };
+        return pts;
+      };
+      figs = FIGS.map((f) => {
+        const mask = masks![f.kind];
+        const hgt = MAIN_H * f.s * sc;
+        const wid = hgt * (mask.w / mask.h);
+        const footX = ox + f.x * sc;
+        const footY = oy + f.y * sc;
+        const flip = f.face !== MASK_FACING;
+        const { footU, handV } = ANCHORS[f.kind];
+        const left = footX - (flip ? 1 - footU : footU) * wid;
+        const top = footY - hgt;
+        const count = Math.round(2600 * f.s * f.s * Math.min(1.3, sc) + 300);
+        const pts = makePoints(
+          mask,
+          left,
+          top,
+          wid,
+          hgt,
+          flip,
+          footX,
+          footY,
+          count,
+        );
+        const hand: [number, number] = [
+          f.face === "right" ? left + wid : left,
+          top + handV * hgt,
+        ];
+        return {
+          cx: left + wid / 2,
+          cy: top + hgt / 2,
+          hand,
+          pts,
+          r: 0,
+          d: dim(left + wid / 2, top + hgt / 2),
+          thread: f.kind === "reach",
+          peak: 0.72,
+        };
       });
+      // The handshake partner: hidden like the others, as bright as the main figure when found
+      {
+        const p = partner;
+        const pts = makePoints(
+          masks.reach,
+          p.left,
+          p.top,
+          p.wid,
+          p.hgt,
+          p.flip,
+          p.footX,
+          p.footY,
+          Math.round(5200 * Math.min(1.4, sc)),
+        );
+        for (const q of pts) q.b = Math.min(1, q.b * 1.15);
+        figs.push({
+          cx: p.left + p.wid / 2,
+          cy: p.top + p.hgt / 2,
+          hand: mainHand,
+          pts,
+          r: 0,
+          d: 1,
+          thread: false,
+          peak: 0.9,
+        });
+      }
       light.R = Math.max(120, Math.min(200, W * 0.12));
       if (!light.user) {
         light.x = light.tx = W * 0.62;
@@ -287,7 +418,8 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
             const d2 = dx * dx + dy * dy;
             if (d2 >= R2) continue;
             const f = 1 - Math.sqrt(d2) / R;
-            ctx!.fillStyle = STYLES[Math.min(15, ((b[i] + f * f * 0.5) * 16) | 0)];
+            ctx!.fillStyle =
+              STYLES[Math.min(15, ((b[i] + f * f * 0.5) * 16) | 0)];
             ctx!.fillRect(x[i], y[i], 1.3, 1.3);
           }
         }
@@ -295,18 +427,29 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
 
       for (const f of figs) {
         const dist = Math.hypot(f.cx - light.x, f.cy - light.y);
-        const target = reduce ? 0 : Math.max(0, Math.min(1, 1 - (dist - R * 0.55) / (R * 0.6)));
+        const target = reduce
+          ? 0
+          : Math.max(0, Math.min(1, 1 - (dist - R * 0.55) / (R * 0.6)));
         f.r += (target - f.r) * (target > f.r ? 0.05 : 0.035);
         if (f.r < 0.005 && target === 0) continue;
         for (const p of f.pts) {
           const q = ease(Math.max(0, Math.min(1, (f.r - p.delay) / 0.55)));
           const jx = Math.sin(t * 0.002 + p.tx) * (1 - q) * 3;
-          const a = (0.06 + 0.72 * q) * p.b * Math.max(0.35, f.d) * Math.min(1, f.r * 5);
+          const a =
+            (0.06 + f.peak * q) *
+            p.b *
+            Math.max(0.35, f.d) *
+            Math.min(1, f.r * 5);
           ctx!.fillStyle = STYLES[Math.min(15, (a * 16) | 0)];
-          ctx!.fillRect(p.sx + (p.tx - p.sx) * q + jx, p.sy + (p.ty - p.sy) * q, 1.5, 1.5);
+          ctx!.fillRect(
+            p.sx + (p.tx - p.sx) * q + jx,
+            p.sy + (p.ty - p.sy) * q,
+            1.5,
+            1.5,
+          );
         }
         // Reaching figures send a faint thread of moving dots to the main figure's hand
-        if (f.kind === "reach" && f.r > 0.8) {
+        if (f.thread && f.r > 0.8) {
           const a0 = (f.r - 0.8) / 0.2;
           const [x1, y1] = f.hand;
           const [x2, y2] = mainHand;
@@ -314,9 +457,14 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
           const cy = Math.min(y1, y2) - Math.abs(x2 - x1) * 0.25 - 30;
           for (let j = 0; j < 70; j++) {
             const u = (j / 70 + t * 0.00012) % 1;
-            const qx = (1 - u) * (1 - u) * x1 + 2 * (1 - u) * u * cx + u * u * x2;
-            const qy = (1 - u) * (1 - u) * y1 + 2 * (1 - u) * u * cy + u * u * y2;
-            ctx!.fillStyle = STYLES[Math.min(15, ((a0 * 0.55 * Math.sin(u * Math.PI)) * 16) | 0)];
+            const qx =
+              (1 - u) * (1 - u) * x1 + 2 * (1 - u) * u * cx + u * u * x2;
+            const qy =
+              (1 - u) * (1 - u) * y1 + 2 * (1 - u) * u * cy + u * u * y2;
+            ctx!.fillStyle =
+              STYLES[
+                Math.min(15, (a0 * 0.55 * Math.sin(u * Math.PI) * 16) | 0)
+              ];
             ctx!.fillRect(qx, qy, 1.4, 1.4);
           }
         }
@@ -351,7 +499,8 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
         frame(0);
         return;
       }
-      if (!raf && onScreen && !document.hidden) raf = requestAnimationFrame(loop);
+      if (!raf && onScreen && !document.hidden)
+        raf = requestAnimationFrame(loop);
     }
     function resize() {
       const r = host!.getBoundingClientRect();
@@ -403,7 +552,11 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
           c.height = img.naturalHeight;
           const x = c.getContext("2d")!;
           x.drawImage(img, 0, 0);
-          resolve({ data: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height });
+          resolve({
+            data: x.getImageData(0, 0, c.width, c.height).data,
+            w: c.width,
+            h: c.height,
+          });
         };
         img.onerror = reject;
         img.src = src;
@@ -434,5 +587,11 @@ export function GtmSearchlight({ avoidRef }: { avoidRef?: RefObject<HTMLElement 
     };
   }, [avoidRef]);
 
-  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 block h-full w-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 block h-full w-full"
+    />
+  );
 }
